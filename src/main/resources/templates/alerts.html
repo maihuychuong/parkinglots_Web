@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cảnh báo</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet" />
+    <!-- Custom CSS -->
+    <link th:href="@{/css/staff.css}" rel="stylesheet" />
+</head>
+<body class="d-flex flex-column min-vh-100">
+<!-- Navbar -->
+<div th:replace="~{fragments/navbar :: navbarFragment}"></div>
+
+<!-- Main content -->
+<main class="flex-grow-1">
+    <div class="container mt-5 pt-5">
+        <h1 class="mb-4 text-primary fw-bold">Cảnh báo</h1>
+        <p class="lead text-muted mb-4">Xem và quản lý các cảnh báo trong bãi đỗ xe.</p>
+
+        <!-- Success/Error Messages -->
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Search/Filter Form -->
+        <form th:action="@{/staff/alerts}" method="get" class="mb-4">
+            <div class="row g-2">
+                <div class="col-md-4">
+                    <select name="type" class="form-select">
+                        <option value="">Tất cả loại cảnh báo</option>
+                        <option value="MISSING_EXIT" th:selected="${param.type == 'MISSING_EXIT'}">Xe chưa ghi nhận ra bãi</option>
+                        <option value="OVERDUE" th:selected="${param.type == 'OVERDUE'}">Xe đỗ quá thời gian cho phép</option>
+                        <option value="PAYMENT_ERROR" th:selected="${param.type == 'PAYMENT_ERROR'}">Lỗi thanh toán</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <select name="resolved" class="form-select">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="false" th:selected="${param.resolved == 'false'}">Chưa giải quyết</option>
+                        <option value="true" th:selected="${param.resolved == 'true'}">Đã giải quyết</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Lọc
+                    </button>
+                    <a th:href="@{/staff/alerts}" class="btn btn-outline-secondary ms-2">Xóa bộ lọc</a>
+                </div>
+            </div>
+        </form>
+
+        <!-- Alerts Table -->
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>Loại cảnh báo</th>
+                    <th>Thông điệp</th>
+                    <th>Biển số xe</th>
+                    <th>Thời gian tạo</th>
+                    <th>Trạng thái</th>
+                    <th>Thời gian giải quyết</th>
+                    <th>Người giải quyết</th>
+                    <th sec:authorize="hasAnyAuthority('STAFF', 'ADMIN')">Hành động</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="alert, iterStat : ${alerts}">
+                    <td class="text-center" th:text="${iterStat.count}"></td>
+                    <td class="text-center" th:text="${alert.type.label}"></td>
+                    <td th:text="${alert.message}"></td>
+                    <td class="text-center">
+                        <a th:href="@{/staff/alerts/view/{id}(id=${alert.id})}" th:text="${alert.log?.vehicle?.plateNumber ?: 'Không có'}"></a>
+                    </td>
+                    <td class="text-center" th:text="${#temporals.format(alert.createdAt, 'dd/MM/yyyy HH:mm')}"></td>
+                    <td class="text-center">
+                        <span th:if="${alert.resolved}" class="badge bg-success">Đã giải quyết</span>
+                        <span th:unless="${alert.resolved}" class="badge bg-danger">Chưa giải quyết</span>
+                    </td>
+                    <td class="text-center" th:text="${alert.resolvedAt != null} ? ${#temporals.format(alert.resolvedAt, 'dd/MM/yyyy HH:mm')} : 'Chưa giải quyết'"></td>
+                    <td class="text-center" th:text="${alert.resolvedBy?.username ?: 'Chưa giải quyết'}"></td>
+                    <td class="text-center" sec:authorize="hasAnyAuthority('STAFF', 'ADMIN')">
+                        <form th:if="${!alert.resolved}" th:action="@{/staff/alerts/resolve/{id}(id=${alert.id})}" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Bạn có chắc muốn đánh dấu cảnh báo này là đã giải quyết?');">
+                                <i class="fas fa-check"></i> Giải quyết
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(alerts)}">
+                    <td colspan="9" class="text-center text-muted">Không có cảnh báo nào.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footerFragment}"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function logout() {
+        window.location.href = '/logout';
+    }
+</script>
+</body>
+</html>

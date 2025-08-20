@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" th:fragment="navbarFragment">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin' : '/staff'}}">
+            <i class="fas fa-parking me-2"></i>BÃI XE TTTM
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin' : '/staff'}}">
+                        <i class="fas fa-tachometer-alt me-1"></i>Trang chủ
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/parking-logs' : '/staff/parking-logs'}}">
+                        <i class="fas fa-car me-1"></i>Quản lý xe vào/ra
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/parking-slots' : '/staff/parking-slots'}}">
+                        <i class="fas fa-parking me-1"></i>Quản lý khe đỗ
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/transactions' : '/staff/transactions'}}">
+                        <i class="fas fa-money-bill-wave me-1"></i>Quản lý thanh toán
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/schedule' : '/staff/schedule'}}">
+                        <i class="fas fa-calendar-alt me-1"></i>Lịch làm việc
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/alerts' : '/staff/alerts'}}">
+                        <i class="fas fa-exclamation-triangle me-1"></i>Cảnh báo
+                    </a>
+                </li>
+                <!-- More Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="moreDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-ellipsis-h me-1"></i>Thêm
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-notifications" aria-labelledby="moreDropdown">
+                        <li>
+                            <a class="dropdown-item" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/parking-lots' : '/staff/parking-lots'}}">
+                                <i class="fas fa-car-side me-2"></i>Thông tin bãi đỗ
+                            </a>
+                        </li>
+                        <li sec:authorize="hasAuthority('ADMIN')">
+                            <a class="dropdown-item" th:href="@{/admin/users}">
+                                <i class="fas fa-users me-2"></i>Quản lý nhân viên
+                            </a>
+                        </li>
+                        <li sec:authorize="hasAuthority('ADMIN')">
+                            <a class="dropdown-item" th:href="@{/admin/reports}">
+                                <i class="fas fa-chart-bar me-2"></i>Báo cáo thống kê
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <ul class="navbar-nav">
+                <!-- Notification Dropdown -->
+                <li class="nav-item dropdown notification-bell">
+                    <a class="nav-link dropdown-toggle" href="#" id="notificationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-bell"></i>
+                        <span th:if="${unreadCount > 0}" class="notification-badge" th:text="${unreadCount}"></span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-notifications" aria-labelledby="notificationDropdown">
+                        <li th:if="${#lists.isEmpty(notifications)}" class="dropdown-item text-center">
+                            Không có thông báo
+                        </li>
+                        <li th:each="notification : ${notifications}" class="notification-item" th:classappend="${notification.read} ? '' : 'unread'">
+                            <a class="text-decoration-none text-dark"
+                               th:href="${notification.alertId != null} ? @{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/alerts/view/{id}(id=${notification.alertId})' : '/staff/alerts/view/{id}(id=${notification.alertId})'}} : @{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/notifications/{id}(id=${notification.id})' : '/staff/notifications/{id}(id=${notification.id})'}}">
+                                <div><strong th:text="${notification.title}"></strong></div>
+                                <div th:text="${notification.message}"></div>
+                                <div class="notification-time" th:text="${#temporals.format(notification.createdAt, 'dd/MM/yyyy HH:mm', 'Asia/Ho_Chi_Minh')}"></div>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-center" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/notifications' : '/staff/notifications'}}">
+                                Xem tất cả thông báo
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                <!-- User Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-user me-1"></i><span th:text="${username} ?: 'User'"></span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                        <li>
+                            <a class="dropdown-item" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/profile' : '/staff/profile'}}">
+                                <i class="fas fa-user-circle me-2"></i>Thông tin cá nhân
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/change-password' : '/staff/change-password'}}">
+                                <i class="fas fa-key me-2"></i>Đổi mật khẩu
+                            </a>
+                        </li>
+                        <li><a class="dropdown-item" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<script>
+    function logout() {
+        document.getElementById('logoutForm').submit();
+    }
+</script>
+</body>
+</html>

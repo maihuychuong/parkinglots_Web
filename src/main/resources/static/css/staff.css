@@ -1,0 +1,193 @@
+/* General styles */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* Navbar styles */
+.navbar {
+    background-color: #1a3c6c; /* Màu xanh dương đậm phù hợp với chủ đề bãi đỗ xe */
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    color: #ffffff !important;
+}
+
+.navbar-nav .nav-link {
+    color: #ffffff !important;
+    transition: color 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #a8d5ff !important; /* Màu xanh nhạt khi hover */
+}
+
+.navbar-nav .nav-link.active {
+    color: #ffd700 !important; /* Màu vàng để nhấn mạnh mục đang chọn */
+}
+
+.dropdown-menu {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+}
+
+.dropdown-item {
+    color: #333333;
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #e9ecef;
+}
+
+/* Notification styles */
+.notification-bell {
+    position: relative;
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: #dc3545; /* Màu đỏ, phù hợp với text-danger */
+    color: #ffffff;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+.dropdown-menu-notifications {
+    width: 300px;
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+}
+
+.notification-item {
+    padding: 10px;
+    border-bottom: 1px solid #e9ecef;
+    color: #333333;
+}
+
+.notification-item.unread {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+
+.notification-item:hover {
+    background-color: #e9ecef;
+}
+
+.notification-time {
+    font-size: 0.8em;
+    color: #6c757d;
+}
+
+/* Main content styles */
+main {
+    padding-top: 80px; /* Khoảng cách để tránh bị Navbar che */
+}
+
+h1.display-5 {
+    color: #1a3c6c; /* Màu xanh dương đậm */
+}
+
+.lead.text-muted {
+    color: #6c757d;
+}
+
+/* Card styles */
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+.card-body i {
+    color: inherit; /* Kế thừa màu từ class text-* của Bootstrap */
+}
+
+.card .btn {
+    margin-top: 10px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Specific card colors */
+.card .text-primary i { color: #0d6efd; } /* Màu xanh dương cho xe vào/ra */
+.card .text-success i { color: #198754; } /* Màu xanh lá cho khe đỗ */
+.card .text-info i { color: #0dcaf0; } /* Màu xanh nhạt cho thanh toán */
+.card .text-warning i { color: #ffc107; } /* Màu vàng cho lịch làm việc */
+.card .text-danger i { color: #dc3545; } /* Màu đỏ cho cảnh báo */
+.card .text-secondary i { color: #6c757d; } /* Màu xám cho xác nhận xe */
+
+/* Table styles (for Schedule page) */
+.table {
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table th {
+    background-color: #1a3c6c;
+    color: #ffffff;
+    text-align: center;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f1f3f5;
+}
+
+.table .btn {
+    padding: 5px 10px;
+}
+
+/* Form styles (for Edit page) */
+.form-control:disabled {
+    background-color: #e9ecef;
+}
+
+textarea.form-control {
+    resize: vertical;
+}
+
+/* Footer styles */
+footer {
+    background-color: #1a3c6c;
+    color: #ffffff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+
+    .navbar-nav .nav-link {
+        font-size: 0.9rem;
+    }
+
+    h1.display-5 {
+        font-size: 1.8rem;
+    }
+
+    .card {
+        margin-bottom: 20px;
+    }
+
+    .table {
+        font-size: 0.9rem;
+    }
+
+    .dropdown-menu-notifications {
+        width: 100%;
+    }
+}

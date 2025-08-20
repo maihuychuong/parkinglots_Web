@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý bãi đỗ xe</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link th:href="@{/css/staff.css}" rel="stylesheet">
+</head>
+<body class="d-flex flex-column min-vh-100">
+<!-- Navbar -->
+<div th:replace="~{fragments/navbar :: navbarFragment}"></div>
+
+<!-- Main content -->
+<main class="flex-grow-1">
+    <div class="container mt-5 pt-5">
+        <div class="row">
+            <div class="col-12 text-center mb-4">
+                <h1 class="display-5 fw-bold text-primary">Quản lý bãi đỗ xe</h1>
+                <p class="lead text-muted">Xem và quản lý thông tin các bãi đỗ xe.</p>
+            </div>
+        </div>
+        <div class="row mb-4">
+            <div class="col-12">
+                <!-- Search Form -->
+                <form th:action="@{/staff/parking-lots}" method="get" class="d-flex">
+                    <input type="text" name="name" class="form-control me-2" placeholder="Tìm kiếm theo tên bãi đỗ" th:value="${param.name}">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-1"></i>Tìm kiếm
+                    </button>
+                    <a th:href="@{/staff/parking-lots}" class="btn btn-outline-secondary ms-2">Xóa bộ lọc</a>
+                </form>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <!-- Error Message -->
+                <div th:if="${error}" class="alert alert-danger" role="alert">
+                    <span th:text="${error}"></span>
+                </div>
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">Danh sách bãi đỗ xe</h5>
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th scope="col">Tên bãi đỗ</th>
+                                <th scope="col">Địa chỉ</th>
+                                <th scope="col">Số điện thoại</th>
+                                <th scope="col">Giờ mở cửa</th>
+                                <th scope="col">Giờ đóng cửa</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="lot : ${parkingLots}">
+                                <td class="text-center" th:text="${lot.name}"></td>
+                                <td class="text-center" th:text="${lot.address}"></td>
+                                <td class="text-center" th:text="${lot.phone}"></td>
+                                <td class="text-center" th:text="${lot.openTime}"></td>
+                                <td class="text-center" th:text="${lot.closeTime}"></td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(parkingLots)}">
+                                <td colspan="5" class="text-center">Không có bãi đỗ xe nào.</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footerFragment}"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Custom Script -->
+<script>
+    function logout() {
+        window.location.href = '/logout';
+    }
+</script>
+</body>
+</html>
