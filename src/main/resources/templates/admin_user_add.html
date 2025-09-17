@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thêm nhân viên</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+    <link th:href="@{/css/staff.css}" rel="stylesheet">
+</head>
+<body class="d-flex flex-column min-vh-100">
+<!-- Navbar -->
+<div th:replace="~{fragments/navbar :: navbarFragment}"></div>
+
+<!-- Main content -->
+<main class="flex-grow-1">
+    <div class="container mt-5 pt-5">
+        <div class="row">
+            <div class="col-12 text-center mb-4">
+                <h1 class="display-5 fw-bold text-primary">Thêm nhân viên</h1>
+                <p class="lead text-muted">Thêm thông tin nhân viên mới vào hệ thống.</p>
+            </div>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger" role="alert">
+            <span th:text="${errorMessage}"></span>
+        </div>
+        <div class="row">
+            <div class="col-12 col-md-8 offset-md-2">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <form th:action="@{/admin/users/add}" th:object="${userForm}" method="post">
+                            <div class="row">
+                                <div class="col-12 col-md-6 mb-3">
+                                    <label for="username" class="form-label">Tên đăng nhập</label>
+                                    <input type="text" class="form-control" id="username" th:field="*{username}" required>
+                                    <div th:errors="*{username}" class="text-danger"></div>
+                                </div>
+                                <div class="col-12 col-md-6 mb-3">
+                                    <label for="password" class="form-label">Mật khẩu</label>
+                                    <input type="password" class="form-control" id="password" th:field="*{password}" required>
+                                    <div th:errors="*{password}" class="text-danger"></div>
+                                </div>
+                                <div class="col-12 col-md-6 mb-3">
+                                    <label for="fullName" class="form-label">Họ tên</label>
+                                    <input type="text" class="form-control" id="fullName" th:field="*{fullName}" required>
+                                    <div th:errors="*{fullName}" class="text-danger"></div>
+                                </div>
+                                <div class="col-12 col-md-6 mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" th:field="*{email}" required>
+                                    <div th:errors="*{email}" class="text-danger"></div>
+                                </div>
+                                <div class="col-12 col-md-6 mb-3">
+                                    <label for="phone" class="form-label">Số điện thoại</label>
+                                    <input type="text" class="form-control" id="phone" th:field="*{phone}" required>
+                                    <div th:errors="*{phone}" class="text-danger"></div>
+                                </div>
+                                <div class="col-12 col-md-6 mb-3">
+                                    <label for="role" class="form-label">Vai trò</label>
+                                    <select class="form-select" id="role" th:field="*{role}" required>
+                                        <option value="ADMIN" th:text="${T(com.example.demo.model.enums.Role).ADMIN.getLabel()}"></option>
+                                        <option value="STAFF" th:text="${T(com.example.demo.model.enums.Role).STAFF.getLabel()}"></option>
+                                    </select>
+                                    <div th:errors="*{role}" class="text-danger"></div>
+                                </div>
+                                <div class="col-12 col-md-6 mb-3">
+                                    <label for="status" class="form-label">Trạng thái</label>
+                                    <select class="form-select" id="status" th:field="*{status}" required>
+                                        <option value="ACTIVE" th:text="${T(com.example.demo.model.enums.UserStatus).ACTIVE.getLabel()}"></option>
+                                        <option value="INACTIVE" th:text="${T(com.example.demo.model.enums.UserStatus).INACTIVE.getLabel()}"></option>
+                                        <option value="BANNED" th:text="${T(com.example.demo.model.enums.UserStatus).BANNED.getLabel()}"></option>
+                                    </select>
+                                    <div th:errors="*{status}" class="text-danger"></div>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-outline-primary">Thêm nhân viên</button>
+                                <a th:href="@{/admin/users}" class="btn btn-outline-secondary">Hủy</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<div th:replace="~{fragments/footer :: footerFragment}"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.querySelector('form').addEventListener('submit', function (e) {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const phone = document.getElementById('phone').value;
+        if (!/^[a-zA-Z0-9]{4,20}$/.test(username)) {
+            alert('Tên đăng nhập phải từ 4-20 ký tự, chỉ chứa chữ cái và số');
+            e.preventDefault();
+        }
+        if (!/^(?=.*[A-Za-z])(?=.*\d).{6,}$/.test(password)) {
+            alert('Mật khẩu phải có ít nhất 6 ký tự, chứa ít nhất một chữ cái và một số');
+            e.preventDefault();
+        }
+        if (!/^\d{10,11}$/.test(phone)) {
+            alert('Số điện thoại phải có 10-11 chữ số');
+            e.preventDefault();
+        }
+    });
+    function logout() {
+        document.getElementById('logoutForm').submit();
+    }
+</script>
+<form id="logoutForm" th:action="@{/logout}" method="post" style="display: none;"></form>
+</body>
+</html>

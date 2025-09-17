@@ -36,7 +36,6 @@ public class User {
     private String email;
 
     @NotBlank(message = "Số điện thoại không được để trống")
-    @Pattern(regexp = "^\\d{10,11}$", message = "Số điện thoại phải có 10-11 chữ số")
     private String phone;
 
     private Role role;
