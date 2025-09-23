@@ -4,6 +4,7 @@ import com.example.demo.config.CustomUserDetails;
 import com.example.demo.entity.*;
 import com.example.demo.model.dto.ParkingLogDTO;
 import com.example.demo.model.enums.LogStatus;
+import com.example.demo.model.enums.TransactionStatus;
 import com.example.demo.model.enums.UserStatus;
 import com.example.demo.repository.*;
 import com.example.demo.service.*;
@@ -23,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -45,6 +47,8 @@ public class AdminController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
+    private final ReportService reportService;
+    private final ParkingLotRepository parkingLotRepository;
 
     public AdminController(ShiftService shiftService, UserService userService, ParkingSlotRepository parkingSlotRepository,
                            ParkingLogRepository parkingLogRepository, VehicleRepository vehicleRepository,
@@ -52,7 +56,7 @@ public class AdminController {
                            ParkingSlotService parkingSlotService, TransactionService transactionService,
                            TransactionRepository transactionRepository, AlertService alertService,
                            AlertRepository alertRepository, UserRepository userRepository,
-                           PasswordEncoder passwordEncoder, NotificationService notificationService) {
+                           PasswordEncoder passwordEncoder, NotificationService notificationService, ReportService reportService, ParkingLotRepository parkingLotRepository) {
         this.shiftService = shiftService;
         this.userService = userService;
         this.parkingSlotRepository = parkingSlotRepository;
@@ -68,6 +72,8 @@ public class AdminController {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.notificationService = notificationService;
+        this.reportService = reportService;
+        this.parkingLotRepository = parkingLotRepository;
     }
 
     private boolean isAuthenticated(Authentication auth, Model model, RedirectAttributes redirectAttributes) {
@@ -109,6 +115,12 @@ public class AdminController {
 
         long totalStaff = userRepository.count();
         model.addAttribute("totalStaff", totalStaff);
+
+        long todayReports = transactionRepository.findByStatus(TransactionStatus.PAID)
+                .stream()
+                .filter(t -> t.getPaidAt() != null && !t.getPaidAt().isBefore(startOfDay) && !t.getPaidAt().isAfter(endOfDay))
+                .count();
+        model.addAttribute("todayReports", todayReports);
 
         return "admin";
     }
@@ -266,7 +278,7 @@ public class AdminController {
         notificationService.markAsRead(id, username);
         model.addAttribute("notification", notification);
         model.addAttribute("username", username);
-        return "staff_notification_view";
+        return "notification_view";
     }
 
     @GetMapping("/notifications")
@@ -277,7 +289,7 @@ public class AdminController {
 
         String username = auth.getName();
         model.addAttribute("username", username);
-        return "staff_notifications";
+        return "notifications";
     }
 
     @GetMapping("/schedule")
@@ -474,6 +486,97 @@ public class AdminController {
         model.addAttribute("selectedLotId", lotId);
 
         return "staff_parking_slots";
+    }
+
+    @GetMapping("/parking-slots/add")
+    public String showAddParkingSlotForm(Authentication auth, Model model) {
+        if (!isAuthenticated(auth, model, null)) {
+            return "redirect:/login";
+        }
+
+        model.addAttribute("parkingSlot", new ParkingSlot());
+        model.addAttribute("parkingLots", parkingLotService.findAll());
+        model.addAttribute("username", auth.getName());
+        return "add_parking_slot";
+    }
+
+    @PostMapping("/parking-slots/add")
+    public String addParkingSlot(@Valid @ModelAttribute("parkingSlot") ParkingSlot parkingSlot, BindingResult result,
+                                 Authentication auth, RedirectAttributes redirectAttributes) {
+        if (!isAuthenticated(auth, null, redirectAttributes)) {
+            return "redirect:/login";
+        }
+
+        if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", result.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/admin/parking-slots/add";
+        }
+
+        try {
+            parkingSlotService.save(parkingSlot);
+            redirectAttributes.addFlashAttribute("successMessage", "Thêm khe đỗ thành công.");
+            return "redirect:/admin/parking-slots";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi thêm khe đỗ: " + e.getMessage());
+            return "redirect:/admin/parking-slots/add";
+        }
+    }
+
+    @GetMapping("/parking-slots/edit/{id}")
+    public String showEditParkingSlotForm(@PathVariable("id") String id, Authentication auth, Model model) {
+        if (!isAuthenticated(auth, model, null)) {
+            return "redirect:/login";
+        }
+
+        Optional<ParkingSlot> parkingSlot = parkingSlotService.findById(id);
+        if (parkingSlot.isEmpty()) {
+            model.addAttribute("errorMessage", "Không tìm thấy khe đỗ.");
+            return "add_parking_slot";
+        }
+
+        model.addAttribute("parkingSlot", parkingSlot.get());
+        model.addAttribute("parkingLots", parkingLotService.findAll());
+        model.addAttribute("username", auth.getName());
+        return "add_parking_slot";
+    }
+
+    @PostMapping("/parking-slots/edit/{id}")
+    public String editParkingSlot(@PathVariable("id") String id, @Valid @ModelAttribute("parkingSlot") ParkingSlot parkingSlot,
+                                  BindingResult result, Authentication auth, RedirectAttributes redirectAttributes) {
+        if (!isAuthenticated(auth, null, redirectAttributes)) {
+            return "redirect:/login";
+        }
+
+        if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", result.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/admin/parking-slots/edit/" + id;
+        }
+
+        try {
+            parkingSlot.setId(id);
+            parkingSlotService.save(parkingSlot);
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật khe đỗ thành công.");
+            return "redirect:/admin/parking-slots";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi cập nhật khe đỗ: " + e.getMessage());
+            return "redirect:/admin/parking-slots/edit/" + id;
+        }
+    }
+
+    @PostMapping("/parking-slots/delete")
+    public String deleteParkingSlot(@RequestParam("slotId") String slotId, Authentication auth, RedirectAttributes redirectAttributes) {
+        if (!isAuthenticated(auth, null, redirectAttributes)) {
+            return "redirect:/login";
+        }
+
+        try {
+            parkingSlotService.deleteById(slotId);
+            redirectAttributes.addFlashAttribute("successMessage", "Xóa khe đỗ thành công.");
+            return "redirect:/admin/parking-slots";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa khe đỗ: " + e.getMessage());
+            return "redirect:/admin/parking-slots";
+        }
     }
 
     @GetMapping("/parking-lots")
@@ -680,5 +783,66 @@ public class AdminController {
             redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi thay đổi mật khẩu: " + e.getMessage());
             return "redirect:/admin/change-password";
         }
+    }
+
+    @GetMapping("/reports")
+    public String getReports(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String lotId,
+            Authentication auth, Model model) {
+        if (!isAuthenticated(auth, model, null)) {
+            return "redirect:/login";
+        }
+
+        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
+        String username = userDetails.getUsername();
+        model.addAttribute("username", username);
+        model.addAttribute("role", userDetails.getUser().getRole().name());
+
+        // Default to last 7 days if no dates provided
+        if (startDate == null) {
+            startDate = LocalDate.now().minusDays(7);
+        }
+        if (endDate == null) {
+            endDate = LocalDate.now();
+        }
+
+        // Validate date range
+        if (startDate.isAfter(endDate)) {
+            model.addAttribute("errorMessage", "Ngày bắt đầu không thể sau ngày kết thúc.");
+            startDate = LocalDate.now().minusDays(7);
+            endDate = LocalDate.now();
+        }
+
+        // Validate lotId
+        if (lotId != null && !lotId.isEmpty() && parkingLotRepository.findById(lotId).isEmpty()) {
+            model.addAttribute("errorMessage", "Bãi đỗ không tồn tại.");
+            lotId = null;
+        }
+
+        // Fetch statistics
+        long totalVehicles = reportService.getTotalVehicles(startDate, endDate, lotId);
+        double slotUsagePercentage = reportService.getSlotUsagePercentage(startDate, endDate, lotId);
+        double totalRevenue = reportService.getTotalRevenue(startDate, endDate, lotId);
+
+        // Fetch chart data
+        Map<String, Integer> vehicleChartData = reportService.getVehicleChartData(startDate, endDate, lotId);
+        Map<String, Double> revenueChartData = reportService.getRevenueChartData(startDate, endDate, lotId);
+
+        // Add data to model
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+        model.addAttribute("lotId", lotId);
+        model.addAttribute("parkingLots", reportService.getAllParkingLots());
+        model.addAttribute("totalVehicles", totalVehicles);
+        model.addAttribute("slotUsagePercentage", String.format("%.2f", slotUsagePercentage));
+        model.addAttribute("totalRevenue", String.format("%.2f", totalRevenue));
+        model.addAttribute("vehicleChartLabels", vehicleChartData.keySet());
+        model.addAttribute("vehicleChartData", vehicleChartData.values());
+        model.addAttribute("revenueChartLabels", revenueChartData.keySet());
+        model.addAttribute("revenueChartData", revenueChartData.values());
+
+        return "reports";
     }
 }

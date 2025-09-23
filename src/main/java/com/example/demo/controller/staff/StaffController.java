@@ -147,7 +147,7 @@ public class StaffController {
 
         model.addAttribute("notification", notification);
         model.addAttribute("username", username);
-        return "staff_notification_view";
+        return "notification_view";
     }
 
     // Existing /notifications endpoint (unchanged)
@@ -159,7 +159,7 @@ public class StaffController {
 
         String username = auth.getName();
         model.addAttribute("username", username);
-        return "staff_notifications";
+        return "notifications";
     }
 
     @GetMapping("/schedule")

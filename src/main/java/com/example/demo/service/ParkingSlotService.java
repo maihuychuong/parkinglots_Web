@@ -5,6 +5,7 @@ import com.example.demo.repository.ParkingSlotRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ParkingSlotService {
@@ -20,5 +21,17 @@ public class ParkingSlotService {
 
     public List<ParkingSlot> findByLotId(String lotId) {
         return parkingSlotRepository.findByLot_Id(lotId);
+    }
+
+    public ParkingSlot save(ParkingSlot parkingSlot) {
+        return parkingSlotRepository.save(parkingSlot);
+    }
+
+    public void deleteById(String id) {
+        parkingSlotRepository.deleteById(id);
+    }
+
+    public Optional<ParkingSlot> findById(String id) {
+        return parkingSlotRepository.findById(id);
     }
 }
