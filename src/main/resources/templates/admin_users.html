@@ -57,7 +57,7 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <tr th:each="user : ${users}" class="hover-card">
+                                <tr th:each="user : ${users}" th:if="${user.role == T(com.example.demo.model.enums.Role).STAFF}" class="hover-card">
                                     <td>
                                         <span th:text="${#strings.substring(user.id, #strings.length(user.id) - 8)}" th:title="${user.id}" data-bs-toggle="tooltip"></span>
                                     </td>

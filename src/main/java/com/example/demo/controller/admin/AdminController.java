@@ -3,9 +3,7 @@ package com.example.demo.controller.admin;
 import com.example.demo.config.CustomUserDetails;
 import com.example.demo.entity.*;
 import com.example.demo.model.dto.ParkingLogDTO;
-import com.example.demo.model.enums.LogStatus;
-import com.example.demo.model.enums.TransactionStatus;
-import com.example.demo.model.enums.UserStatus;
+import com.example.demo.model.enums.*;
 import com.example.demo.repository.*;
 import com.example.demo.service.*;
 import jakarta.validation.Valid;
@@ -22,10 +20,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -132,12 +127,10 @@ public class AdminController {
             return "redirect:/login";
         }
 
-        CustomUserDetails userDetails = (CustomUserDetails) auth.getPrincipal();
-        String username = userDetails.getUsername();
-        model.addAttribute("username", username);
-        model.addAttribute("role", userDetails.getUser().getRole().name());
-        model.addAttribute("users", userService.getAllUsers());
-        model.addAttribute("totalStaff", userRepository.count());
+        // Lấy danh sách tài khoản STAFF
+        model.addAttribute("users", userService.getUsersByRole(Role.STAFF));
+        // Đếm số tài khoản STAFF
+        model.addAttribute("totalStaff", userService.countByRole(Role.STAFF));
         return "admin_users";
     }
 
@@ -290,78 +283,6 @@ public class AdminController {
         String username = auth.getName();
         model.addAttribute("username", username);
         return "notifications";
-    }
-
-    @GetMapping("/schedule")
-    public String getSchedule(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-                              Authentication auth, Model model) {
-        if (!isAuthenticated(auth, model, null)) {
-            return "redirect:/login";
-        }
-
-        String username = auth.getName();
-        return userService.findByUsernameSafe(username)
-                .map(user -> {
-                    List<Shift> shifts;
-                    if (date != null) {
-                        shifts = shiftService.getShiftsByUserAndDate(user, date);
-                        model.addAttribute("selectedDate", date);
-                    } else {
-                        shifts = shiftService.getShiftsByUser(user);
-                    }
-                    model.addAttribute("shifts", shifts);
-                    model.addAttribute("username", user.getUsername());
-                    return "staff_schedule";
-                })
-                .orElseGet(() -> {
-                    model.addAttribute("errorMessage", "Không tìm thấy người dùng.");
-                    model.addAttribute("shifts", Collections.emptyList());
-                    model.addAttribute("username", "Unknown");
-                    return "staff_schedule";
-                });
-    }
-
-    @GetMapping("/schedule/edit/{id}")
-    public String showEditNoteForm(@PathVariable("id") String shiftId, Authentication auth, Model model) {
-        if (!isAuthenticated(auth, model, null)) {
-            return "redirect:/login";
-        }
-
-        String username = auth.getName();
-        return userService.findByUsernameSafe(username)
-                .map(user -> {
-                    Shift shift = shiftService.getShiftsByUser(user).stream()
-                            .filter(s -> s.getId().equals(shiftId))
-                            .findFirst()
-                            .orElseThrow(() -> new RuntimeException("Ca làm việc không tồn tại."));
-                    model.addAttribute("shift", shift);
-                    model.addAttribute("username", user.getUsername());
-                    return "staff_schedule_edit";
-                })
-                .orElseGet(() -> {
-                    model.addAttribute("errorMessage", "Không tìm thấy người dùng.");
-                    model.addAttribute("username", "Unknown");
-                    return "redirect:/admin/schedule?error=UserNotFound";
-                });
-    }
-
-    @PostMapping("/schedule/edit/{id}")
-    public String updateShiftNote(@PathVariable("id") String shiftId, @RequestParam("note") String note,
-                                  Authentication auth, RedirectAttributes redirectAttributes) {
-        if (!isAuthenticated(auth, null, redirectAttributes)) {
-            return "redirect:/login";
-        }
-
-        String username = auth.getName();
-        return userService.findByUsernameSafe(username)
-                .map(user -> {
-                    shiftService.updateShiftNote(shiftId, user.getId(), note);
-                    return "redirect:/admin/schedule";
-                })
-                .orElseGet(() -> {
-                    redirectAttributes.addFlashAttribute("errorMessage", "Không tìm thấy người dùng.");
-                    return "redirect:/admin/schedule?error=UserNotFound";
-                });
     }
 
     @GetMapping("/parking-logs")
@@ -844,5 +765,191 @@ public class AdminController {
         model.addAttribute("revenueChartData", revenueChartData.values());
 
         return "reports";
+    }
+
+    // Shift Management Endpoints
+    @GetMapping("/schedule")
+    public String getShifts(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) String employeeId,
+            Authentication auth,
+            Model model) {
+        if (!isAuthenticated(auth, model, null)) {
+            return "redirect:/login";
+        }
+
+        String username = auth.getName();
+        model.addAttribute("username", username);
+
+        // Fetch all employees for the filter dropdown
+        List<User> employees = userService.getUsersByRole(Role.STAFF);
+        model.addAttribute("employees", employees);
+
+        // Fetch shift types for the add form
+        model.addAttribute("shiftTypes", ShiftType.values());
+
+        // Fetch shifts based on filters
+        List<Shift> shifts;
+        try {
+            if (date != null && employeeId != null && !employeeId.isEmpty()) {
+                User employee = userService.findById(employeeId);
+                shifts = shiftService.getShiftsByUserAndDate(employee, date);
+                model.addAttribute("selectedDate", date);
+                model.addAttribute("selectedEmployeeId", employeeId);
+            } else if (date != null) {
+                shifts = shiftService.findByShiftDate(date);
+                model.addAttribute("selectedDate", date);
+            } else if (employeeId != null && !employeeId.isEmpty()) {
+                User employee = userService.findById(employeeId);
+                shifts = shiftService.getShiftsByUser(employee);
+                model.addAttribute("selectedEmployeeId", employeeId);
+            } else {
+                shifts = shiftService.findAll();
+            }
+        } catch (RuntimeException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            shifts = shiftService.findAll();
+        }
+
+        // Enrich shifts with employee names
+        shifts.forEach(shift -> shift.setEmployeeName(shift.getUser() != null ? shift.getUser().getFullName() : "Unknown"));
+
+        model.addAttribute("shifts", shifts);
+        return "staff_schedule"; // Maps to the provided Thymeleaf template
+    }
+
+    @GetMapping("/schedule/add")
+    public String showAddShiftForm(Authentication auth, Model model) {
+        if (!isAuthenticated(auth, model, null)) {
+            return "redirect:/login";
+        }
+
+        String username = auth.getName();
+        model.addAttribute("username", username);
+        model.addAttribute("shift", new Shift());
+        model.addAttribute("employees", userService.getUsersByRole(Role.STAFF));
+        model.addAttribute("shiftTypes", ShiftType.values());
+        return "admin_shift_add";
+    }
+
+    @PostMapping("/schedule/add")
+    public String addShift(@Valid @ModelAttribute("shift") Shift shift, BindingResult result,
+                           @RequestParam("employeeId") String employeeId,
+                           Authentication auth, RedirectAttributes redirectAttributes) {
+        if (!isAuthenticated(auth, null, redirectAttributes)) {
+            return "redirect:/login";
+        }
+
+        if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", result.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/admin/schedule/add";
+        }
+
+        try {
+            // Set the user for the shift
+            User employee = userService.findById(employeeId);
+            shift.setUser(employee);
+            shift.setId(UUID.randomUUID().toString()); // Generate a new ID
+            shiftService.save(shift);
+            // Send notification
+            String message = String.format("Ca làm việc mới đã được thêm cho %s vào ngày %s.",
+                    employee.getFullName(), shift.getShiftDate());
+            notificationService.sendNotification(
+                    "admin",
+                    "Quản lý ca làm việc",
+                    message,
+                    "/admin/schedule"
+            );
+            redirectAttributes.addFlashAttribute("successMessage", "Thêm ca làm việc thành công.");
+            return "redirect:/admin/schedule";
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi thêm ca làm việc: " + e.getMessage());
+            return "redirect:/admin/schedule/add";
+        }
+    }
+
+    @GetMapping("/schedule/edit/{id}")
+    public String showEditShiftForm(@PathVariable("id") String id, Authentication auth, Model model) {
+        if (!isAuthenticated(auth, model, null)) {
+            return "redirect:/login";
+        }
+
+        String username = auth.getName();
+        try {
+            Shift shift = shiftService.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy ca làm việc."));
+            model.addAttribute("shift", shift);
+            model.addAttribute("employees", userService.getUsersByRole(Role.STAFF));
+            model.addAttribute("shiftTypes", ShiftType.values());
+            model.addAttribute("username", username);
+            return "admin_shift_edit";
+        } catch (RuntimeException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("username", username);
+            return "admin_shift_edit";
+        }
+    }
+
+    @PostMapping("/schedule/edit/{id}")
+    public String editShift(@PathVariable("id") String id, @Valid @ModelAttribute("shift") Shift shift,
+                            BindingResult result, @RequestParam("employeeId") String employeeId,
+                            Authentication auth, RedirectAttributes redirectAttributes) {
+        if (!isAuthenticated(auth, null, redirectAttributes)) {
+            return "redirect:/login";
+        }
+
+        if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute("errorMessage", result.getAllErrors().get(0).getDefaultMessage());
+            return "redirect:/admin/schedule/edit/" + id;
+        }
+
+        try {
+            // Set the user for the shift
+            User employee = userService.findById(employeeId);
+            shift.setUser(employee);
+            shift.setId(id);
+            shiftService.save(shift);
+            // Send notification
+            String message = String.format("Ca làm việc của %s vào ngày %s đã được cập nhật.",
+                    employee.getFullName(), shift.getShiftDate());
+            notificationService.sendNotification(
+                    "admin",
+                    "Quản lý ca làm việc",
+                    message,
+                    "/admin/schedule"
+            );
+            redirectAttributes.addFlashAttribute("successMessage", "Cập nhật ca làm việc thành công.");
+            return "redirect:/admin/schedule";
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi cập nhật ca làm việc: " + e.getMessage());
+            return "redirect:/admin/schedule/edit/" + id;
+        }
+    }
+
+    @PostMapping("/schedule/delete/{id}")
+    public String deleteShift(@PathVariable("id") String id, Authentication auth, RedirectAttributes redirectAttributes) {
+        if (!isAuthenticated(auth, null, redirectAttributes)) {
+            return "redirect:/login";
+        }
+
+        try {
+            Shift shift = shiftService.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy ca làm việc."));
+            shiftService.deleteById(id);
+            // Send notification
+            String message = String.format("Ca làm việc của %s vào ngày %s đã bị xóa.",
+                    shift.getUser().getFullName(), shift.getShiftDate());
+            notificationService.sendNotification(
+                    "admin",
+                    "Quản lý ca làm việc",
+                    message,
+                    "/admin/schedule"
+            );
+            redirectAttributes.addFlashAttribute("successMessage", "Xóa ca làm việc thành công.");
+            return "redirect:/admin/schedule";
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Lỗi khi xóa ca làm việc: " + e.getMessage());
+            return "redirect:/admin/schedule";
+        }
     }
 }

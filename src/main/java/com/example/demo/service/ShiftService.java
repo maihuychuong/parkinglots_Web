@@ -17,6 +17,14 @@ public class ShiftService {
         this.shiftRepository = shiftRepository;
     }
 
+    public List<Shift> findAll() {
+        return shiftRepository.findAll();
+    }
+
+    public List<Shift> findByShiftDate(LocalDate date) {
+        return shiftRepository.findByShiftDate(date);
+    }
+
     public List<Shift> getShiftsByUser(User user) {
         return shiftRepository.findByUserOrderByShiftDateDesc(user);
     }
@@ -25,6 +33,17 @@ public class ShiftService {
         return shiftRepository.findByUserAndShiftDate(user, date);
     }
 
+    public Optional<Shift> findById(String id) {
+        return shiftRepository.findById(id);
+    }
+
+    public Shift save(Shift shift) {
+        return shiftRepository.save(shift);
+    }
+
+    public void deleteById(String id) {
+        shiftRepository.deleteById(id);
+    }
 
     public Shift updateShiftNote(String shiftId, String userId, String note) {
         Optional<Shift> optionalShift = shiftRepository.findById(shiftId);
@@ -61,5 +80,4 @@ public class ShiftService {
 
         return staffList;
     }
-
 }

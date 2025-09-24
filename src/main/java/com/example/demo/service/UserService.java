@@ -71,6 +71,14 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    public List<User> getUsersByRole(Role role) {
+        return userRepository.findByRole(role);
+    }
+
+    public long countByRole(Role role) {
+        return userRepository.countByRole(role);
+    }
+
     public User saveUser(User user) {
         // Validate using Jakarta Validator
         Set<ConstraintViolation<User>> violations = validator.validate(user);

@@ -102,17 +102,23 @@
                         <i class="fas fa-user me-1"></i><span th:text="${username} ?: 'User'"></span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <li>
+                        <!-- Hiển thị "Thông tin cá nhân" và "Đổi mật khẩu" chỉ khi KHÔNG phải ADMIN -->
+                        <li th:if="${!#authorization.expression('hasAuthority(''ADMIN'')')}">
                             <a class="dropdown-item" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/profile' : '/staff/profile'}}">
                                 <i class="fas fa-user-circle me-2"></i>Thông tin cá nhân
                             </a>
                         </li>
-                        <li>
+                        <li th:if="${!#authorization.expression('hasAuthority(''ADMIN'')')}">
                             <a class="dropdown-item" th:href="@{${#authorization.expression('hasAuthority(''ADMIN'')') ? '/admin/change-password' : '/staff/change-password'}}">
                                 <i class="fas fa-key me-2"></i>Đổi mật khẩu
                             </a>
                         </li>
-                        <li><a class="dropdown-item" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>Đăng xuất</a></li>
+                        <!-- Hiển thị "Đăng xuất" cho tất cả vai trò -->
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="logout()">
+                                <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                            </a>
+                        </li>
                     </ul>
                 </li>
             </ul>

@@ -21,9 +21,60 @@
         <div class="row">
             <div class="col-12 text-center mb-4">
                 <h1 class="display-5 fw-bold text-primary">Lịch làm việc</h1>
-                <p class="lead text-muted">Xem và quản lý ca làm việc của bạn.</p>
+                <p class="lead text-muted" sec:authorize="hasAuthority('ADMIN')">Quản lý ca làm việc của tất cả nhân viên.</p>
+                <p class="lead text-muted" sec:authorize="!hasAuthority('ADMIN')">Xem và quản lý ca làm việc của bạn.</p>
             </div>
         </div>
+
+        <!-- Add Shift Form (Admin Only) -->
+        <div class="row" sec:authorize="hasAuthority('ADMIN')">
+            <div class="col-12 mb-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">Thêm ca làm việc mới</h5>
+                        <form method="post" th:action="@{/staff/schedule/add}" class="row g-3">
+                            <div class="col-md-3">
+                                <label for="employee" class="form-label">Nhân viên</label>
+                                <select id="employee" name="employeeId" class="form-select" required>
+                                    <option value="">Chọn nhân viên</option>
+                                    <option th:each="emp : ${employees}" th:value="${emp.id}" th:text="${emp.fullName}"></option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="shiftDate" class="form-label">Ngày</label>
+                                <input type="date" id="shiftDate" name="shiftDate" class="form-control" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="shiftType" class="form-label">Loại ca</label>
+                                <select id="shiftType" name="shiftType" class="form-select" required>
+                                    <option value="">Chọn loại ca</option>
+                                    <option th:each="type : ${shiftTypes}" th:value="${type}" th:text="${type.label}"></option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="shiftStart" class="form-label">Giờ bắt đầu</label>
+                                <input type="time" id="shiftStart" name="shiftStart" class="form-control" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="shiftEnd" class="form-label">Giờ kết thúc</label>
+                                <input type="time" id="shiftEnd" name="shiftEnd" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="note" class="form-label">Ghi chú</label>
+                                <textarea id="note" name="note" class="form-control" rows="2"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-plus me-1"></i> Thêm ca
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shift List and Filter -->
         <div class="row">
             <div class="col-12">
                 <div class="card shadow-sm border-0">
@@ -33,11 +84,16 @@
                         <form method="get" th:action="@{/staff/schedule}" class="d-flex align-items-center mb-4 gap-2 flex-wrap">
                             <label for="date" class="form-label mb-0 me-2">Tìm theo ngày:</label>
                             <input type="date" id="date" name="date" class="form-control" th:value="${selectedDate}" style="max-width: 200px;">
-
+                            <div sec:authorize="hasAuthority('ADMIN')">
+                                <label for="employeeFilter" class="form-label mb-0 me-2">Nhân viên:</label>
+                                <select id="employeeFilter" name="employeeId" class="form-select" style="max-width: 200px;">
+                                    <option value="">Tất cả nhân viên</option>
+                                    <option th:each="emp : ${employees}" th:value="${emp.id}" th:text="${emp.name}"></option>
+                                </select>
+                            </div>
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-search me-1"></i> Tìm
                             </button>
-
                             <a th:href="@{/staff/schedule}" class="btn btn-secondary">
                                 Xoá lọc
                             </a>
@@ -46,6 +102,7 @@
                         <table class="table table-hover">
                             <thead>
                             <tr>
+                                <th scope="col" sec:authorize="hasAuthority('ADMIN')">Nhân viên</th>
                                 <th scope="col">Ngày</th>
                                 <th scope="col">Loại ca</th>
                                 <th scope="col">Giờ bắt đầu</th>
@@ -56,14 +113,18 @@
                             </thead>
                             <tbody>
                             <tr th:each="shift : ${shifts}">
+                                <td class="text-center" sec:authorize="hasAuthority('ADMIN')" th:text="${shift.employeeName}"></td>
                                 <td class="text-center" th:text="${shift.shiftDate}"></td>
                                 <td class="text-center" th:text="${shift.shiftType.label}"></td>
                                 <td class="text-center" th:text="${shift.shiftStart}"></td>
                                 <td class="text-center" th:text="${shift.shiftEnd}"></td>
-                                <td th:text="${shift.note} ?: 'Không có ghi chú'"></td> <!-- Không căn giữa -->
+                                <td th:text="${shift.note} ?: 'Không có ghi chú'"></td>
                                 <td class="text-center">
-                                    <a th:href="@{/staff/schedule/edit/{id}(id=${shift.id})}" class="btn btn-sm btn-outline-primary">
-                                        <i class="fas fa-edit"></i> Báo cáo
+                                    <a th:href="@{/staff/schedule/edit/{id}(id=${shift.id})}" class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="fas fa-edit"></i> <span sec:authorize="hasAuthority('ADMIN')">Sửa</span><span sec:authorize="!hasAuthority('ADMIN')">Báo cáo</span>
+                                    </a>
+                                    <a sec:authorize="hasAuthority('ADMIN')" th:href="@{/staff/schedule/delete/{id}(id=${shift.id})}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Bạn có chắc muốn xóa ca này?');">
+                                        <i class="fas fa-trash"></i> Xóa
                                     </a>
                                 </td>
                             </tr>
